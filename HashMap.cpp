@@ -5,20 +5,21 @@
 #include <list>
 #include <vector>
 
-using namespace std;
+using std::swap;
 
 const size_t start_size = (1 << 3);
 
-template<class KeyType, class ValueType, class Hash = hash<KeyType>>
+template<class KeyType, class ValueType, class Hash = std::hash<KeyType>>
 class HashMap {
 public:
-    using iterator = typename list<pair<const KeyType, ValueType>>::iterator;
-    using const_iterator = typename list<pair<const KeyType, ValueType>>::const_iterator;
+    using KeyValPair = std::pair<const KeyType, ValueType>;
+    using iterator = typename std::list<KeyValPair>::iterator;
+    using const_iterator = typename std::list<KeyValPair>::const_iterator;
 
 private:
     size_t table_size, elements_size;
-    vector<std::list<iterator>> hash_table;
-    list<pair<const KeyType, ValueType>> elements_list;
+    std::vector<std::list<iterator>> hash_table;
+    std::list<KeyValPair> elements_list;
     Hash hasher;
 
 public:
@@ -57,9 +58,9 @@ public:
 
     template <class iter>
     HashMap(iter first, iter last, Hash hash = Hash())
-            : table_size(start_size)
-            , elements_size(0)
-            , hasher(hash) {
+    : table_size(start_size)
+    , elements_size(0)
+    , hasher(hash) {
         hash_table.resize(table_size);
         while (first != last) {
             insert(*first);
@@ -67,10 +68,10 @@ public:
         }
     }
 
-    HashMap(initializer_list<pair<const KeyType, ValueType>> init, Hash hash = Hash())
-            : table_size(start_size)
-            , elements_size(0)
-            , hasher(hash) {
+    HashMap(std::initializer_list<KeyValPair>& init, Hash hash = Hash())
+    : table_size(start_size)
+    , elements_size(0)
+    , hasher(hash) {
         hash_table.resize(table_size);
         for (const auto& element : init) {
             insert(element);
@@ -89,13 +90,17 @@ public:
         return hasher;
     }
 
-    void insert(pair<KeyType, ValueType> new_element) {
+    void insert(std::pair<KeyType, ValueType>& new_element) {
         if (find(new_element.first) != end())
             return;
-        if (elements_size * 4 >= table_size) {
-            list<pair<const KeyType, ValueType>> t_list = elements_list;
 
-            size_t new_table_size = table_size * 2;
+        const int multiply_limit = 4;
+        const int size_multiplier = 2;
+
+        if (elements_size * multiply_limit >= table_size) {
+            std::list<KeyValPair> t_list = elements_list;
+
+            size_t new_table_size = table_size * size_multiplier;
             clear();
             hash_table.resize(new_table_size);
             table_size = new_table_size;
@@ -110,7 +115,7 @@ public:
         hash_table[hash_function()(new_element.first) % table_size].push_back(--elements_list.end());
     }
 
-    void erase(KeyType key) {
+    void erase(KeyType& key) {
         size_t hash_index = hasher(key) % table_size;
         for (auto element = hash_table[hash_index].begin(); element != hash_table[hash_index].end(); ++element) {
             if ((*element)->first == key) {
@@ -146,7 +151,7 @@ public:
         return elements_list.end();
     }
 
-    iterator find(const KeyType key) {
+    iterator find(const KeyType& key) {
         size_t hash_index = hasher(key) % table_size;
 
         for (const auto& element : hash_table[hash_index]) {
@@ -157,7 +162,7 @@ public:
         return end();
     }
 
-    const_iterator find(const KeyType key) const {
+    const_iterator find(const KeyType& key) const {
         size_t hash_index = hasher(key) % table_size;
 
         for (const auto& element : hash_table[hash_index]) {
@@ -169,7 +174,7 @@ public:
     }
 
     ValueType& operator[](const KeyType& key) {
-        pair<const KeyType, ValueType> element = {key, ValueType()};
+        KeyValPair element = {key, ValueType()};
 
         insert(element);
         auto iter = find(element.first);
@@ -177,10 +182,10 @@ public:
         return iter->second;
     }
 
-    const ValueType& at(const KeyType key) const {
+    const ValueType& at(const KeyType& key) const {
         auto iter = find(key);
         if (iter == end())
-            throw out_of_range("error");
+            throw std::out_of_range("error");
 
         return iter->second;
     }
